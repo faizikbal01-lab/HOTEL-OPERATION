@@ -1,4 +1,4 @@
-# Hotel Booking Analysis & Cancellation Prediction (EDA + ML)
+# Hotel Booking Analysis & Cancellation Prediction
 
 ## Project Overview
 
