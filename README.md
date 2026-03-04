@@ -106,6 +106,86 @@ The analysis is based on a hotel bookings dataset with **87,396 records** and **
 
 ---
 
+## Recommendations for GitHub Upload
+
+Before publishing this project to GitHub, the following improvements are recommended to maximise usability, reproducibility, and professional quality.
+
+### 1. Data Quality & Cleaning
+
+- **Handle zero-guest bookings:** The dataset is known to contain rows where `adults`, `children`, and `babies` are all zero — logically invalid bookings that skew ADR and revenue calculations. Add a validation step that flags and removes these records, and log how many were dropped.
+- **Cap extreme ADR outliers:** Outlier ADR values (e.g. €5,400/night) are present in this dataset and can distort regression models and revenue totals. Apply an IQR-based or percentile cap (e.g. top 1%) and document the threshold chosen, or at minimum visualise the ADR distribution before and after filtering.
+- **Fix the `/content/` file path hardcode:** The notebook currently loads the dataset from `/content/hotel booking.csv` — a Google Colab-specific path. Replace this with a relative path (`data/raw/hotel_booking.csv`) so the notebook runs without modification on any machine.
+- **Rename the dataset file:** `hotel booking.csv` contains a space, which can cause issues in shell scripts and some tools. Rename to `hotel_booking.csv` and update all references in the notebook.
+- **Validate `arrival_date` reconstruction:** The date is parsed from three separate columns (`arrival_date_year`, `arrival_date_month`, `arrival_date_day_of_month`). Add a sanity check that the resulting `arrival_date` column contains no `NaT` values and that the date range (2015–2017) matches expectations before proceeding with time-series analysis.
+- **Address missing values explicitly:** The dataset has known null entries in `children`, `country`, and `agent` columns. Add a dedicated cleaning cell that prints null counts per column, fills or drops them with documented rationale, and confirms the final row count.
+
+### 2. Repository Structure
+
+- **Move away from `/content/` (Colab) to a portable layout:** Structure the project so it runs identically locally, in Colab, and in CI. Use relative paths and a `data/` folder:
+
+  ```
+  ├── data/
+  │   ├── raw/                    # hotel_booking.csv (or download instructions)
+  │   └── processed/              # Cleaned dataset after pipeline runs
+  ├── notebooks/
+  │   └── hotel_booking_eda.ipynb
+  ├── src/
+  │   └── features.py             # total_stays, revenue_per_booking helpers
+  ├── outputs/
+  │   └── figures/                # Saved charts (ADR trend, cancellation rates, etc.)
+  └── README.md
+  ```
+
+- **Rename the notebook:** `hotelbookingEDA.ipynb` lacks separators and has inconsistent casing. Rename to `hotel_booking_eda.ipynb` for readability and cross-platform compatibility.
+- **Do not commit the raw CSV if it is large:** The hotel bookings dataset is ~7 MB. Add a download note in `data/raw/README.md` pointing to the Kaggle source, and add `data/raw/*.csv` to `.gitignore` to keep the repo lightweight.
+- **Add a `.gitignore`:** Exclude `__pycache__/`, `.ipynb_checkpoints/`, `*.pyc`, `data/raw/*.csv`, and any virtual environment folders.
+
+### 3. Documentation
+
+- **Add a `requirements.txt`:** Pin the exact versions of all dependencies so the notebook is reproducible:
+
+  ```
+  pandas==2.x.x
+  matplotlib==3.x.x
+  seaborn==0.x.x
+  scikit-learn==1.x.x
+  statsmodels==0.x.x
+  scipy==1.x.x
+  ```
+
+- **Add docstrings to feature engineering functions:** The `total_stays` and `revenue_per_booking` derivations should be documented with formulas — e.g. `total_stays = stays_in_week_nights + stays_in_weekend_nights`, `revenue_per_booking = adr × total_stays`. This makes the derived columns auditable.
+- **Save all visualisations as image files:** Add `plt.savefig('outputs/figures/<chart_name>.png', dpi=150, bbox_inches='tight')` before each `plt.show()` call. This allows charts to be embedded in the README and reused in reports without re-running the notebook.
+- **Embed key charts in the README:** Reference saved figures directly — for example, the ADR time-series and monthly revenue bar chart are strong visual hooks:
+
+  ```markdown
+  ![Monthly Revenue by Hotel Type](outputs/figures/monthly_revenue.png)
+  ![Cancellation Rate by Lead Time](outputs/figures/cancellation_lead_time.png)
+  ```
+
+- **Add a model summary table to the README:** Include the logistic regression and OLS results in a compact table so readers can assess model quality at a glance without running the notebook:
+
+  | Model | Target | Key Features | Accuracy / R² |
+  |---|---|---|---|
+  | Logistic Regression | `is_canceled` | Lead time, deposit type, special requests | 76.7% |
+  | OLS Regression | `adr` | Adults, children, babies | R² = 0.165 |
+
+### 4. Ethics, Privacy & Attribution
+
+- **Cite the original dataset source:** The dataset is publicly available on Kaggle. Add the full attribution:
+  > Antonio, N., de Almeida, A., & Nunes, L. (2019). *Hotel booking demand datasets.* Data in Brief, 22, 41–49. DOI: 10.1016/j.dib.2018.11.126. Available on Kaggle: https://www.kaggle.com/datasets/jessemostipak/hotel-booking-demand
+- **Note the dataset's temporal scope:** The data covers 2015–2017. Hotel market dynamics, OTA dominance, and pricing norms have shifted since then — add a visible note in the README that findings reflect a historical window and are not representative of current hospitality conditions.
+- **Flag country-level data sensitivity:** The `country` column contains guest country of origin. While anonymised at the individual level, aggregated country-of-origin statistics could be commercially sensitive. Note this in the disclaimer.
+- **Add a `LICENSE` file:** Use **MIT License** for the analysis code and notebooks. Clarify that the license covers only your work, not the underlying dataset, which is governed by its own terms on Kaggle.
+
+### 5. Model & Analysis Quality Improvements
+
+- **Address the class imbalance in the logistic model:** The recall for cancellations is only 0.28 — the model is heavily biased toward predicting non-cancellation. Apply SMOTE oversampling or `class_weight='balanced'` in scikit-learn and report the updated classification report. This is the most impactful single improvement to the predictive model.
+- **Add a confusion matrix visualisation:** A heatmap of the confusion matrix (`ConfusionMatrixDisplay` from scikit-learn) makes the 76.7% accuracy figure much more interpretable — readers can immediately see where the model fails.
+- **Expand the ADR regression model:** An R² of 0.165 means guest composition alone explains very little of ADR variance. Add `hotel`, `arrival_date_month`, `market_segment`, and `lead_time` as additional predictors and report the improvement. This would make the regression section significantly more valuable.
+- **Add feature importance or coefficient plot for the logistic model:** A horizontal bar chart of Statsmodels coefficients (with confidence intervals) visually communicates the relative importance of each cancellation predictor and is a standard inclusion in EDA-to-ML projects.
+- **Report precision and recall separately for both classes:** The current metrics note strong precision for non-canceled bookings but weak cancellation recall. Include the full `classification_report` output (or a formatted table) in both the notebook and README so readers can assess business trade-offs (false negatives = undetected cancellations = lost revenue protection).
+- **Add a lead time distribution plot by cancellation status:** A side-by-side histogram of lead times for canceled vs. non-canceled bookings would visually reinforce the `+0.006` lead-time coefficient finding and is a compelling chart for the README.
+
 ## Author
 
 **[Mohd Faiz]**
