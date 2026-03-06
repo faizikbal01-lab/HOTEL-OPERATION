@@ -88,24 +88,6 @@ The analysis is based on a hotel bookings dataset with **87,396 records** and **
 
 ---
 
-## How to Run
-
-1. **Clone the Repository:**
-   ```bash
-   git clone <your-repo-url>
-   ```
-
-2. **Install Dependencies:**
-   ```bash
-   pip install pandas seaborn matplotlib scikit-learn statsmodels scipy
-   ```
-
-3. **Add the Dataset:** Place `hotel booking.csv` in the `/content/` directory (or update the file path in the notebook accordingly).
-
-4. **Open the Notebook:** Run `hotelbookingEDA.ipynb` cell by cell to reproduce the full analysis, visualizations, and model outputs.
-
----
-
 ## Recommendations for GitHub Upload
 
 Before publishing this project to GitHub, the following improvements are recommended to maximise usability, reproducibility, and professional quality.
