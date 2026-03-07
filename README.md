@@ -65,17 +65,6 @@ Place `hotel booking.csv` in the root project folder (same level as the notebook
 
 > 📥 Dataset source: [Kaggle - Hotel Booking Demand](https://www.kaggle.com/datasets/jessemostipak/hotel-booking-demand)
 
-**4. Run the notebook**
-```bash
-jupyter notebook hotel_booking_analysis.ipynb
-```
-> Or upload to [Google Colab](https://colab.research.google.com/) and update the file path in Cell 1:
-> ```python
-> df = pd.read_csv('hotel booking.csv')  # update path if needed
-> ```
-
-**5. Run all cells** — `Kernel → Restart & Run All`
-
 ---
 
 ## 💡 Key Findings
